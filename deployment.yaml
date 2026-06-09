@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: self-service-portal
+  labels:
+    app: self-service-portal
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: self-service-portal
+  template:
+    metadata:
+      labels:
+        app: self-service-portal
+    spec:
+      securityContext:
+        fsGroup: 1000
+      containers:
+        - name: portal
+          image: 825347769056.dkr.ecr.ap-south-1.amazonaws.com/self-service-portal:1.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3000
+          env:
+            - name: PORT
+              value: "3000"
+            - name: DATA_DIR
+              value: /data
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          volumeMounts:
+            - name: portal-data
+              mountPath: /data
+      volumes:
+        - name: portal-data
+          persistentVolumeClaim:
+            claimName: ssp-data
